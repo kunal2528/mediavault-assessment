@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { bulkSetStatus } from '@/api/client';
 import { AssetDetail } from '@/features/assets/AssetDetail';
 import { AssetGrid } from '@/features/assets/AssetGrid';
@@ -73,16 +73,23 @@ export function App() {
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
   }, [q, status, kind, tag, sort]);
 
-  const { items, total, loading, error } = useAssets({ q, status, kind, tag, sort, limit: 24 });
+  const { items, total, loading, loadingMore, nextCursor, error, loadMore } = useAssets({
+    q,
+    status,
+    kind,
+    tag,
+    sort,
+    limit: 24,
+  });
 
-  function toggleSelect(id: string) {
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
 
   async function applyBulkStatus(next: AssetStatus) {
     const ids = [...selectedIds];
@@ -184,17 +191,19 @@ export function App() {
         </span>
       </div>
 
-      {selectedIds.size > 0 && (
-        <div className="bulkbar">
-          <span>{selectedIds.size} selected</span>
-          {STATUSES.map((s) => (
-            <button key={s} onClick={() => applyBulkStatus(s)}>
-              Set {statusLabel(s).toLowerCase()}
-            </button>
-          ))}
-          <button onClick={() => setSelectedIds(new Set())}>Clear selection</button>
-        </div>
-      )}
+      <div className={`bulkbar${selectedIds.size === 0 ? ' bulkbar--empty' : ''}`}>
+        {selectedIds.size > 0 && (
+          <>
+            <span>{selectedIds.size} selected</span>
+            {STATUSES.map((s) => (
+              <button key={s} onClick={() => applyBulkStatus(s)}>
+                Set {statusLabel(s).toLowerCase()}
+              </button>
+            ))}
+            <button onClick={() => setSelectedIds(new Set())}>Clear selection</button>
+          </>
+        )}
+      </div>
 
       {notice && <p className="notice">{notice}</p>}
       {error && <p className="error">{error}</p>}
@@ -216,6 +225,9 @@ export function App() {
             activeId={activeId}
             onToggleSelect={toggleSelect}
             onOpen={setActiveId}
+            onLoadMore={loadMore}
+            loadingMore={loadingMore}
+            hasMore={nextCursor !== null}
           />
         )}
         {activeId && (
