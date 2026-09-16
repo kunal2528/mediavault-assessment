@@ -24,24 +24,37 @@ export function useAssets(query: AssetQuery) {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
+    let current = true;
+
     setState((s) => ({ ...s, loading: true, error: null }));
-    listAssets(query)
-      .then((page) => {
-        setState({
-          items: page.items,
-          total: page.total,
-          nextCursor: page.nextCursor,
-          loading: false,
-          error: null,
+    const timer = window.setTimeout(() => {
+      listAssets(query, controller.signal)
+        .then((page) => {
+          if (!current) return;
+          setState({
+            items: page.items,
+            total: page.total,
+            nextCursor: page.nextCursor,
+            loading: false,
+            error: null,
+          });
+        })
+        .catch((err: unknown) => {
+          if (!current || (err instanceof DOMException && err.name === 'AbortError')) return;
+          setState((s) => ({
+            ...s,
+            loading: false,
+            error: err instanceof Error ? err.message : 'Something went wrong',
+          }));
         });
-      })
-      .catch((err: unknown) => {
-        setState((s) => ({
-          ...s,
-          loading: false,
-          error: err instanceof Error ? err.message : 'Something went wrong',
-        }));
-      });
+    }, 300);
+
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [JSON.stringify(query)]);
 
   return state;

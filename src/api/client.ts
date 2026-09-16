@@ -43,8 +43,56 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function listAssets(query: AssetQuery): Promise<AssetPage> {
-  return request<AssetPage>(`/api/assets?${toSearchParams(query)}`);
+const inFlightAssetRequests = new Map<string, Promise<AssetPage>>();
+
+export function listAssets(query: AssetQuery, signal?: AbortSignal): Promise<AssetPage> {
+  const path = `/api/assets?${toSearchParams(query)}`;
+  let shared = inFlightAssetRequests.get(path);
+
+  if (!shared) {
+    shared = request<AssetPage>(path);
+    inFlightAssetRequests.set(path, shared);
+    shared.then(
+      () => inFlightAssetRequests.delete(path),
+      () => inFlightAssetRequests.delete(path),
+    );
+  }
+
+  if (!signal) return shared;
+
+  return new Promise<AssetPage>((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      signal.removeEventListener('abort', onAbort);
+    };
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new DOMException('The request was aborted.', 'AbortError'));
+    };
+
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+
+    signal.addEventListener('abort', onAbort, { once: true });
+    shared!.then(
+      (page) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(page);
+      },
+      (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(error);
+      },
+    );
+  });
 }
 
 export function getAsset(id: string): Promise<Asset> {
