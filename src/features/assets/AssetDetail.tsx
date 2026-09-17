@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getAsset, thumbnailUrl, updateAsset } from '@/api/client';
 import { formatBytes, formatDate, formatDuration, statusLabel } from '@/lib/format';
 import type { Asset, AssetStatus } from '@/lib/types';
@@ -11,14 +11,30 @@ interface Props {
   onSaved: (asset: Asset) => void;
 }
 
-/**
- * Baseline detail panel. Loads on open, saves with no optimistic update,
- * surfaces failures as raw strings, and does nothing about focus.
- */
 export function AssetDetail({ id, onClose, onSaved }: Props) {
   const [asset, setAsset] = useState<Asset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Move focus into the panel when it opens
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+  }, []);
+
+  // Escape closes the panel (focus return is handled by the caller)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    }
+    const panel = panelRef.current;
+    panel?.addEventListener('keydown', handleKeyDown);
+    return () => panel?.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     setAsset(null);
@@ -44,13 +60,20 @@ export function AssetDetail({ id, onClose, onSaved }: Props) {
   }
 
   return (
-    <aside className="panel">
+    <aside
+      ref={panelRef}
+      className="panel"
+      role="region"
+      aria-label={asset ? `Details for ${asset.name}` : 'Asset details'}
+    >
       <div className="panel__head">
         <h2>Asset detail</h2>
-        <button onClick={onClose}>Close</button>
+        <button ref={closeButtonRef} onClick={onClose} aria-label="Close asset detail">
+          Close
+        </button>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       {!asset && !error && <p className="muted">Loading…</p>}
 
       {asset && (
@@ -67,9 +90,7 @@ export function AssetDetail({ id, onClose, onSaved }: Props) {
             {asset.width && (
               <>
                 <dt>Dimensions</dt>
-                <dd>
-                  {asset.width}×{asset.height}
-                </dd>
+                <dd>{asset.width}×{asset.height}</dd>
               </>
             )}
             {asset.durationSec && (
@@ -94,12 +115,13 @@ export function AssetDetail({ id, onClose, onSaved }: Props) {
             </ul>
           )}
 
-          <p className="muted">Status</p>
-          <div className="row">
+          <p className="muted" id="status-label">Status</p>
+          <div className="row" role="group" aria-labelledby="status-label">
             {STATUSES.map((status) => (
               <button
                 key={status}
                 disabled={saving || status === asset.status}
+                aria-pressed={status === asset.status}
                 onClick={() => setStatus(status)}
               >
                 {statusLabel(status)}

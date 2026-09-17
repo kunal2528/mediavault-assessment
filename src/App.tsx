@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { bulkSetStatus } from '@/api/client';
 import { AssetDetail } from '@/features/assets/AssetDetail';
 import { AssetGrid } from '@/features/assets/AssetGrid';
@@ -51,6 +51,9 @@ export function App() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [liveMessage, setLiveMessage] = useState<string>('');
+  const focusByIndexRef = useRef<((index: number) => void) | null>(null);
+  const activeAssetIndexRef = useRef<number>(0);
 
   useEffect(() => {
     function handlePopState() {
@@ -82,6 +85,16 @@ export function App() {
     limit: 24,
   });
 
+  // Debounced live region announcements
+  useEffect(() => {
+    if (!loading && items.length > 0) {
+      const timer = setTimeout(() => {
+        setLiveMessage(`${items.length} of ${total.toLocaleString()} assets shown`);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [items.length, total, loading]);
+
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -96,17 +109,34 @@ export function App() {
     if (ids.length === 0) return;
     setNotice(null);
     try {
-      // Sends every selected id in one call, which the API refuses above 50.
       const result = await bulkSetStatus(ids, next);
-      setNotice(`${result.applied} updated, ${result.failed} failed.`);
+      const message = `${result.applied} asset${result.applied !== 1 ? 's' : ''} set to ${statusLabel(next).toLowerCase()}${result.failed > 0 ? `, ${result.failed} failed` : ''}`;
+      setNotice(message);
+      setLiveMessage(message);
       setSelectedIds(new Set());
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : 'Bulk update failed');
+      const message = err instanceof Error ? err.message : 'Bulk update failed';
+      setNotice(message);
+      setLiveMessage(message);
     }
   }
 
   function handleSaved(_asset: Asset) {
     // The list is not told that anything changed, so it shows stale rows.
+  }
+
+  function handleAssetOpen(id: string) {
+    const index = items.findIndex((a) => a.id === id);
+    if (index !== -1) activeAssetIndexRef.current = index;
+    setActiveId(id);
+  }
+
+  function handleAssetClose() {
+    setActiveId(null);
+    // Restore keyboard focus to the card that triggered the panel open
+    setTimeout(() => {
+      focusByIndexRef.current?.(activeAssetIndexRef.current);
+    }, 0);
   }
 
   return (
@@ -207,6 +237,11 @@ export function App() {
 
       {notice && <p className="notice">{notice}</p>}
       {error && <p className="error">{error}</p>}
+      
+      {/* Live region for screen reader announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveMessage}
+      </div>
 
       <main className="content">
         {loading && items.length === 0 ? (
@@ -224,14 +259,15 @@ export function App() {
             selectedIds={selectedIds}
             activeId={activeId}
             onToggleSelect={toggleSelect}
-            onOpen={setActiveId}
+            onOpen={handleAssetOpen}
             onLoadMore={loadMore}
             loadingMore={loadingMore}
             hasMore={nextCursor !== null}
+            onRegisterFocusByIndex={(fn) => { focusByIndexRef.current = fn; }}
           />
         )}
         {activeId && (
-          <AssetDetail id={activeId} onClose={() => setActiveId(null)} onSaved={handleSaved} />
+          <AssetDetail id={activeId} onClose={handleAssetClose} onSaved={handleSaved} />
         )}
       </main>
     </div>

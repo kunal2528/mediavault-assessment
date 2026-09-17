@@ -36,7 +36,7 @@ Roughly, and how you split it.
 | 8   | All loaded cards are rendered, so DOM and memory grow with the dataset                                  | `AssetGrid.tsx`                            | Fixed; virtualized rows                |
 | 9   | Missing thumbnails can show broken images and the image request is not lazy or flag-aware               | `AssetGrid.tsx`                            | Fixed; lazy fallback with stable space |
 | 10  | Changing one selection rerenders the entire grid                                                        | `AssetGrid.tsx`                            | Fixed; memoized cards                  |
-| 11  | Selection has no range selection or select-all-loaded behavior                                          | `App.tsx`, `AssetGrid.tsx`                 | Knowingly left; Task 3                 |
+| 11  | Selection has no range selection or select-all-loaded behavior                                          | `App.tsx`, `AssetGrid.tsx`                 | Fixed; Shift+Arrow range selection added (Task 5) |
 | 12  | Bulk updates are not optimistic and do not apply successful per-item results to the list                | `App.tsx`                                  | Knowingly left; Task 3                 |
 | 13  | Bulk partial failures are reduced to counts; failed assets are not rolled back, explained, or retryable | `App.tsx`                                  | Knowingly left; Task 3                 |
 | 14  | Single-asset saves do not update the list and do not handle version conflicts structurally              | `App.tsx`, `AssetDetail.tsx`, `client.ts`  | Knowingly left; Task 3                 |
@@ -44,7 +44,12 @@ Roughly, and how you split it.
 | 16  | API errors are flattened into raw status/message strings instead of preserving structured error codes   | `client.ts`                                | Knowingly left; Task 4                 |
 | 17  | Offline state, recovery, and an error boundary are missing                                              | `App.tsx`, `main.tsx`                      | Knowingly left; Task 4                 |
 | 18  | Loading, empty, and error states are not clearly distinguished                                          | `App.tsx`, `useAssets.ts`, `AssetGrid.tsx` | Fixed; initial states now differ       |
-| 19  | The grid and detail panel are not keyboard-operable and do not manage focus or announce updates         | `AssetGrid.tsx`, `AssetDetail.tsx`         | Knowingly left; Task 5                 |
+| 19  | The grid has no keyboard navigation; cards have no semantic role, name, or selection state for AT       | `AssetGrid.tsx`                            | Fixed; roving tabindex, Arrow keys, role="grid"/role="gridcell", aria-selected, aria-label (Task 5) |
+| 20  | The detail panel does not move focus on open, does not close on Escape, and does not restore focus      | `AssetDetail.tsx`, `App.tsx`               | Fixed; focus to Close button on open, Escape handler, focus returned to triggering card on close (Task 5) |
+| 21  | No live region; screen readers are not told about result counts or bulk action outcomes                 | `App.tsx`                                  | Fixed; aria-live="polite" region with debounced announcements (Task 5) |
+| 22  | Visual checkbox has no accessible name and is a redundant tab stop                                      | `AssetGrid.tsx`                            | Fixed; aria-hidden="true" and tabIndex=-1 on checkbox; selection state on gridcell (Task 5) |
+| 23  | Error messages in the detail panel are not announced to screen readers                                  | `AssetDetail.tsx`                          | Fixed; role="alert" added to error paragraph (Task 5) |
+| 24  | Status buttons in the detail panel have no pressed/current state for AT                                 | `AssetDetail.tsx`                          | Fixed; aria-pressed and role="group" with aria-labelledby added (Task 5) |
 
 ---
 
