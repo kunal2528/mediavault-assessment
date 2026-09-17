@@ -92,10 +92,14 @@ const AssetCard = memo(function AssetCard({
       <AssetThumbnail id={asset.id} hasThumbnail={asset.hasThumbnail} />
       <div className="card__body">
         <p className="card__name">{asset.name}</p>
-        <p className="muted">
+        <p className="card__meta">
           {asset.kind} · {formatBytes(asset.sizeBytes)} · {formatDate(asset.updatedAt)}
         </p>
-        <span className={`pill pill--${asset.status}`} aria-hidden="true">
+        <span
+          className={`pill pill--${asset.status}`}
+          aria-hidden="true"
+          title={`Step ${['draft','in_review','approved','archived'].indexOf(asset.status) + 1} of 4 — ${statusLabel(asset.status)}`}
+        >
           {statusLabel(asset.status)}
         </span>
       </div>
@@ -105,7 +109,11 @@ const AssetCard = memo(function AssetCard({
         tabIndex={-1}
         aria-hidden="true"
         checked={selected}
-        readOnly
+        onChange={() => {/* controlled via onClick below */}}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelect(asset.id);
+        }}
       />
     </div>
   );
@@ -337,10 +345,19 @@ export function AssetGrid({
           className="grid__sentinel"
           style={{ top: Math.max(0, canvasHeight - 1) }}
           aria-hidden="true"
-        >
-          {loadingMore && <span className="muted">Loading more assets…</span>}
-        </div>
+        />
       </div>
+      {(hasMore || loadingMore) && (
+        <div className="load-more">
+          {loadingMore ? (
+            <span className="muted">Loading more…</span>
+          ) : (
+            <button className="load-more__btn" onClick={onLoadMore}>
+              Load more
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

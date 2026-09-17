@@ -3,7 +3,7 @@ import { bulkSetStatus } from '@/api/client';
 import { AssetDetail } from '@/features/assets/AssetDetail';
 import { AssetGrid } from '@/features/assets/AssetGrid';
 import { useAssets } from '@/features/assets/useAssets';
-import { statusLabel } from '@/lib/format';
+import { friendlyError, statusLabel } from '@/lib/format';
 import type { Asset, AssetKind, AssetStatus, AssetQuery } from '@/lib/types';
 
 const STATUSES: AssetStatus[] = ['draft', 'in_review', 'approved', 'archived'];
@@ -43,6 +43,23 @@ function readQueryFromUrl(): QueryState {
       ? (sort as QueryState['sort'])
       : DEFAULT_SORT,
   };
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="skeleton-grid" aria-hidden="true">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} className="skeleton-card">
+          <div className="skeleton-thumb" />
+          <div className="skeleton-body">
+            <div className="skeleton-line skeleton-line--title" />
+            <div className="skeleton-line skeleton-line--meta" />
+            <div className="skeleton-line skeleton-line--pill" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function App() {
@@ -115,7 +132,7 @@ export function App() {
       setLiveMessage(message);
       setSelectedIds(new Set());
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Bulk update failed';
+      const message = friendlyError(err);
       setNotice(message);
       setLiveMessage(message);
     }
@@ -216,15 +233,42 @@ export function App() {
             }
           />
         </label>
-        <span className="muted">
+        <span className="result-count">
           {loading ? 'Loading…' : `${items.length} of ${total.toLocaleString()} shown`}
         </span>
+        {(status.length + kind.length + tag.length) > 0 && (
+          <>
+            <span className="filter-badge">
+              {status.length + kind.length + tag.length} filter{status.length + kind.length + tag.length !== 1 ? 's' : ''} active
+            </span>
+            <button
+              className="filter-clear"
+              onClick={() =>
+                setQueryState((current) => ({
+                  ...current,
+                  status: [],
+                  kind: [],
+                  tag: [],
+                }))
+              }
+            >
+              Clear filters
+            </button>
+          </>
+        )}
       </div>
 
       <div className={`bulkbar${selectedIds.size === 0 ? ' bulkbar--empty' : ''}`}>
         {selectedIds.size > 0 && (
           <>
             <span>{selectedIds.size} selected</span>
+            {selectedIds.size < items.length && (
+              <button
+                onClick={() => setSelectedIds(new Set(items.map((a) => a.id)))}
+              >
+                Select all {items.length}
+              </button>
+            )}
             {STATUSES.map((s) => (
               <button key={s} onClick={() => applyBulkStatus(s)}>
                 Set {statusLabel(s).toLowerCase()}
@@ -245,13 +289,25 @@ export function App() {
 
       <main className="content">
         {loading && items.length === 0 ? (
-          <div className="empty">
-            <p>Loading assets…</p>
-          </div>
+          <SkeletonGrid />
         ) : error && items.length === 0 ? (
           <div className="empty">
-            <p>We could not load these assets.</p>
-            <p className="muted">Check your connection and try again.</p>
+            <svg className="empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p className="empty__title">Could not load assets</p>
+            <p className="empty__sub">{error}</p>
+          </div>
+        ) : !loading && items.length === 0 ? (
+          <div className="empty">
+            <svg className="empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <p className="empty__title">No assets found</p>
+            <p className="empty__sub">Try adjusting your search or filters.</p>
           </div>
         ) : (
           <AssetGrid

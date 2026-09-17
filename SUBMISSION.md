@@ -50,6 +50,19 @@ Roughly, and how you split it.
 | 22  | Visual checkbox has no accessible name and is a redundant tab stop                                      | `AssetGrid.tsx`                            | Fixed; aria-hidden="true" and tabIndex=-1 on checkbox; selection state on gridcell (Task 5) |
 | 23  | Error messages in the detail panel are not announced to screen readers                                  | `AssetDetail.tsx`                          | Fixed; role="alert" added to error paragraph (Task 5) |
 | 24  | Status buttons in the detail panel have no pressed/current state for AT                                 | `AssetDetail.tsx`                          | Fixed; aria-pressed and role="group" with aria-labelledby added (Task 5) |
+| 25  | Status states have no visual distinction; all pills look identical                                      | `styles.css`                               | Fixed; distinct symbol, colour, and border style per status (Task 6)     |
+| 26  | Error messages are raw API strings shown verbatim to the user                                           | `App.tsx`, `AssetDetail.tsx`               | Fixed; `friendlyError()` utility maps codes/messages to readable copy (Task 6) |
+| 27  | No loading feedback while assets are fetched on first load                                              | `App.tsx`, `AssetGrid.tsx`                 | Fixed; 12-card skeleton grid with staggered pulse animation (Task 6)     |
+| 28  | Bulk action bar is visible even when nothing is selected                                                | `App.tsx`                                  | Fixed; bar hidden with `display:none` when selection is empty (Task 6)   |
+| 29  | No way to select all assets at once from the bulk bar                                                   | `App.tsx`                                  | Fixed; "Select all N" button added to bulk bar (Task 6)                  |
+| 30  | Active filters are not surfaced; no way to clear them without editing each control individually         | `App.tsx`                                  | Fixed; active filter badge + "Clear filters" button added (Task 6)       |
+| 31  | Result count is buried in the filter bar with no visual weight                                          | `App.tsx`, `styles.css`                    | Fixed; `.result-count` promoted with `margin-left:auto` (Task 6)        |
+| 32  | Detail panel header scrolls away with content, losing context                                           | `AssetDetail.tsx`, `styles.css`            | Fixed; sticky panel header with `panel__scroll` wrapper (Task 6)         |
+| 33  | Grid has no fallback when virtualized scroll fails or JS is slow                                        | `App.tsx`, `AssetGrid.tsx`                 | Fixed; "Load more" button below grid as fallback (Task 6)                |
+| 34  | All spacing, colour, and type values are hardcoded magic numbers throughout the stylesheet              | `styles.css`                               | Fixed; full CSS token system in `:root` — spacing, type, radius, shadow, colour tokens (Task 6) |
+| 35  | Card body has no visual hierarchy; name, meta, and status pill have equal weight                        | `styles.css`, `AssetGrid.tsx`              | Fixed; name 600-weight at `--text-md`, meta `--text-xs`/`--ink-soft`, pill pushed to bottom with `margin-top:auto` (Task 6) |
+| 36  | Status in detail panel is a flat row of buttons with no indication of progression order                 | `AssetDetail.tsx`, `styles.css`            | Fixed; vertical stepper with step numbers, coloured left border per status, hover states (Task 6) |
+| 37  | Empty and error states are blank text with no visual structure or icon                                  | `App.tsx`, `styles.css`                    | Fixed; SVG icon + bold heading + sub-line for both error and no-results states (Task 6) |
 
 ---
 

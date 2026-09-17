@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { listAssets } from '@/api/client';
+import { friendlyError } from '@/lib/format';
 import type { Asset, AssetQuery } from '@/lib/types';
 
 interface State {
@@ -11,10 +12,6 @@ interface State {
   error: string | null;
 }
 
-/**
- * Baseline loader. Reviewers know this hook is wrong in several ways.
- * Replacing it wholesale is expected and encouraged.
- */
 export function useAssets(query: AssetQuery) {
   const [state, setState] = useState<State>({
     items: [],
@@ -68,7 +65,7 @@ export function useAssets(query: AssetQuery) {
             ...s,
             loading: false,
             loadingMore: false,
-            error: err instanceof Error ? err.message : 'Something went wrong',
+            error: friendlyError(err),
           }));
         });
     }, 300);
@@ -109,7 +106,7 @@ export function useAssets(query: AssetQuery) {
         setState((s) => ({
           ...s,
           loadingMore: false,
-          error: err instanceof Error ? err.message : 'Something went wrong',
+          error: friendlyError(err),
         }));
       })
       .finally(() => {
