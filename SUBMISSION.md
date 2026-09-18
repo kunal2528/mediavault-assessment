@@ -18,8 +18,8 @@ Task 2: https://screenrec.com/share/vixtRwWd65
 Task 5: https://screenrec.com/share/zAKI5drGCw
 Task 6: https://screenrec.com/share/eCOHq0McD3
 
-Deployed on render:
-Deployed frontend link: https://mediavault-assessment-1.onrenderfrontend.com
+Deployed on render
+Deployed frontend link: https://mediavault-assessment-1.onrender.com
 Deployed backend link: https://mediavault-assessment-aj3q.onrender.com
 Github link: https://github.com/kunal2528/mediavault-assessment
 ---
