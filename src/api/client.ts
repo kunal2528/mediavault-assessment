@@ -124,4 +124,4 @@ export function bulkSetStatus(ids: string[], status: Asset['status']): Promise<B
   });
 }
 
-export const thumbnailUrl = (id: string) => `/api/thumb/${id}.svg`;
+export const thumbnailUrl = (id: string) => `${API_BASE_URL}/api/thumb/${id}.svg`;
